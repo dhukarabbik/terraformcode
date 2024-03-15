@@ -143,35 +143,35 @@ resource "azurerm_virtual_network_gateway" "vpn_gateway" {
   }
 }
 
-resource "azurerm_local_network_gateway" "on_prem_gateway" {
-  name                = "myOnPremGateway"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  gateway_address     = "YOUR_ON_PREM_VPN_DEVICE_IP"  # Specify the IP address of your on-premises VPN device
-  address_space       = ["YOUR_ON_PREM_NETWORK_RANGE"] # Specify the address range of your on-premises network
-}
+# resource "azurerm_local_network_gateway" "on_prem_gateway" {
+#   name                = "myOnPremGateway"
+#   location            = azurerm_resource_group.rg.location
+#   resource_group_name = azurerm_resource_group.rg.name
+#   gateway_address     = "YOUR_ON_PREM_VPN_DEVICE_IP"  # Specify the IP address of your on-premises VPN device
+#   address_space       = ["YOUR_ON_PREM_NETWORK_RANGE"] # Specify the address range of your on-premises network
+# }
 
-resource "azurerm_virtual_network_gateway_connection" "vpn_connection" {
-  name                = "myVPNConnection"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+# resource "azurerm_virtual_network_gateway_connection" "vpn_connection" {
+#   name                = "myVPNConnection"
+#   location            = azurerm_resource_group.rg.location
+#   resource_group_name = azurerm_resource_group.rg.name
 
-  type                       = "IPsec"
-  virtual_network_gateway_id = azurerm_virtual_network_gateway.vpn_gateway.id
-  local_network_gateway_id   = azurerm_local_network_gateway.on_prem_gateway.id
+#   type                       = "IPsec"
+#   virtual_network_gateway_id = azurerm_virtual_network_gateway.vpn_gateway.id
+#   local_network_gateway_id   = azurerm_local_network_gateway.on_prem_gateway.id
 
-  shared_key = "YOUR_SHARED_KEY"  #shared key of your on-premises network
+#   shared_key = "YOUR_SHARED_KEY"  #shared key of your on-premises network
 
-  ipsec_policy {
-    dh_group         = "DHGroup2" # Updated the dh_group value
-    ike_encryption   = "AES256"
-    ike_integrity    = "SHA256"
-    ipsec_encryption = "AES256"
-    ipsec_integrity  = "SHA256"
-    pfs_group        = "PFS2"
-    sa_lifetime      = 28800
-  }
-}
+#   ipsec_policy {
+#     dh_group         = "DHGroup2" # Updated the dh_group value
+#     ike_encryption   = "AES256"
+#     ike_integrity    = "SHA256"
+#     ipsec_encryption = "AES256"
+#     ipsec_integrity  = "SHA256"
+#     pfs_group        = "PFS2"
+#     sa_lifetime      = 28800
+#   }
+# }
 
 # Bonus tasks
 
