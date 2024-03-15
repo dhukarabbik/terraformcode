@@ -15,7 +15,7 @@ provider "azurerm" {
 # Create a resource group
 resource "azurerm_resource_group" "rg" {
   name     = "myResourceGroup"
-  location = "canada central"
+  location = "West Europe"
 }
 
 # Create a virtual network
@@ -107,62 +107,7 @@ resource "azurerm_virtual_machine_extension" "ad_ds_extension" {
   PROTECTED_SETTINGS
 }
 
-# Create an Active Directory domain
-resource "azurerm_active_directory_domain" "ad_domain" {
-  name                = "mydomain.com"
-  resource_group_name = azurerm_resource_group.rg.name
-  domain_name         = "mydomain.com"
-  subnet_id           = azurerm_subnet.subnet.id
-  depends_on          = [azurerm_virtual_machine_extension.ad_ds_extension]
-}
-
-# Create Active Directory users and groups
-resource "azurerm_active_directory_user" "ad_user" {
-  name                   = "myuser"
-  resource_group_name    = azurerm_resource_group.rg.name
-  domain_name            = azurerm_active_directory_domain.ad_domain.name
-  user_principal_name    = "myuser@mydomain.com"
-  password               = "P@ssw0rd1234!"
-}
-
-resource "azurerm_active_directory_group" "ad_group" {
-  name                   = "mygroup"
-  resource_group_name    = azurerm_resource_group.rg.name
-  domain_name            = azurerm_active_directory_domain.ad_domain.name
-}
-
-# Create a Group Policy Object (GPO)
-resource "azurerm_group_policy_definition" "gpo" {
-  name                   = "myGPO"
-  domain_name            = azurerm_active_directory_domain.ad_domain.name
-  resource_group_name    = azurerm_resource_group.rg.name
-
-  # Define security policies in the GPO
-  policy_settings = <<SETTINGS
-    {
-      "PasswordPolicies": {
-        "MinimumPasswordLength": 8,
-        "PasswordComplexity": true,
-        "PasswordHistorySize": 24
-      },
-      "AccountLockoutPolicies": {
-        "AccountLockoutThreshold": 5,
-        "AccountLockoutDuration": 30,
-        "ResetAccountLockoutCounterAfter": 30
-      }
-    }
-  SETTINGS
-}
-
-# Assign the GPO to the Active Directory domain
-resource "azurerm_group_policy_assignment" "gpo_assignment" {
-  name                   = "myGPOAssignment"
-  domain_name            = azurerm_active_directory_domain.ad_domain.name
-  resource_group_name    = azurerm_resource_group.rg.name
-  group_policy_definition_id = azurerm_group_policy_definition.gpo.id
-  scope                  = "/"
-}
-
+#
 # Configure Site-to-Site VPN with asymmetric keys
 resource "azurerm_public_ip" "vpn_gateway_ip" {
   name                = "vpnGatewayPublicIP"
@@ -202,8 +147,8 @@ resource "azurerm_local_network_gateway" "on_prem_gateway" {
   name                = "myOnPremGateway"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  gateway_address     = "YOUR_ON_PREM_VPN_DEVICE_IP"
-  address_space       = ["YOUR_ON_PREM_NETWORK_RANGE"]
+  gateway_address     = "YOUR_ON_PREM_VPN_DEVICE_IP"  # Specify the IP address of your on-premises VPN device
+  address_space       = ["YOUR_ON_PREM_NETWORK_RANGE"] # Specify the address range of your on-premises network
 }
 
 resource "azurerm_virtual_network_gateway_connection" "vpn_connection" {
@@ -215,10 +160,10 @@ resource "azurerm_virtual_network_gateway_connection" "vpn_connection" {
   virtual_network_gateway_id = azurerm_virtual_network_gateway.vpn_gateway.id
   local_network_gateway_id   = azurerm_local_network_gateway.on_prem_gateway.id
 
-  shared_key = "YOUR_SHARED_KEY"
+  shared_key = "YOUR_SHARED_KEY"  #shared key of your on-premises network
 
   ipsec_policy {
-    dh_group         = "Group2"
+    dh_group         = "DHGroup2" # Updated the dh_group value
     ike_encryption   = "AES256"
     ike_integrity    = "SHA256"
     ipsec_encryption = "AES256"
@@ -242,7 +187,7 @@ resource "azurerm_site_recovery_fabric" "recovery_fabric" {
   name                = "myRecoveryFabric"
   resource_group_name = azurerm_resource_group.rg.name
   recovery_vault_name = azurerm_recovery_services_vault.recovery_vault.name
-  location            = azurerm_resource_group.rg.location # Add this line
+  location            = azurerm_resource_group.rg.location
 }
 
 resource "azurerm_site_recovery_protection_container" "recovery_container" {
@@ -267,7 +212,6 @@ resource "azurerm_storage_account" "storage_account" {
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  public_network_access_enabled = false
 
   blob_properties {
     cors_rule {
@@ -333,23 +277,23 @@ resource "azurerm_network_interface" "on_prem_vm_nic" {
   }
 }
 
-resource "azurerm_virtual_machine_extension" "on_prem_vm_domain_join" {
-  name                       = "on-prem-vm-domain-join"
-  virtual_machine_id         = azurerm_windows_virtual_machine.on_prem_vm.id
-  publisher                  = "Microsoft.Compute"
-  type                       = "CustomScriptExtension"
-  type_handler_version       = "1.9"
-  auto_upgrade_minor_version = true
+# resource "azurerm_virtual_machine_extension" "on_prem_vm_domain_join" {
+#   name                       = "on-prem-vm-domain-join"
+#   virtual_machine_id         = azurerm_windows_virtual_machine.on_prem_vm.id
+#   publisher                  = "Microsoft.Compute"
+#   type                       = "CustomScriptExtension"
+#   type_handler_version       = "1.9"
+#   auto_upgrade_minor_version = true
 
-  settings = <<SETTINGS
-    {
-      "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File JoinDomain.ps1 -DomainName ${azurerm_active_directory_domain.ad_domain.domain_name} -UserName ${azurerm_active_directory_user.ad_user.user_principal_name} -Password '${azurerm_active_directory_user.ad_user.password}'"
-    }
-  SETTINGS
+#   settings = <<SETTINGS
+#     {
+#       "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File JoinDomain.ps1 -DomainName ${azurerm_virtual_network.vnet.name}.com -UserName adminuser -Password '${azurerm_windows_virtual_machine.vm.admin_password}'"
+#     }
+#   SETTINGS
 
-  protected_settings = <<PROTECTED_SETTINGS
-    {
-      "script": "${base64encode(file("JoinDomain.ps1"))}"
-    }
-  PROTECTED_SETTINGS
-}
+#   protected_settings = <<PROTECTED_SETTINGS
+#     {
+#       "script": "${base64encode(file("JoinDomain.ps1"))}"
+#     }
+#   PROTECTED_SETTINGS
+# }
