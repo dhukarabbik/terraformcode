@@ -15,7 +15,7 @@ provider "azurerm" {
 # Create a resource group
 resource "azurerm_resource_group" "rg" {
   name     = "myResourceGroup"
-  location = "West Europe"
+  location = "canada central"
 }
 
 # Create a virtual network
